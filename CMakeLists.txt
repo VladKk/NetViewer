@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_PREFIX_PATH "/home/vlad/Qt/5.14.2/gcc_64/lib/cmake")
 
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Network REQUIRED)
 
 add_executable(NetViewer
         src/main.cpp
@@ -20,4 +20,4 @@ add_executable(NetViewer
         src/main_win/main_win.h
         src/main_win/main_win.ui)
 
-target_link_libraries(NetViewer PRIVATE Qt5::Widgets)
+target_link_libraries(NetViewer PRIVATE Qt5::Widgets Qt5::Network)
