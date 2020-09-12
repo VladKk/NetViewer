@@ -2,6 +2,11 @@
 #include <QMessageBox>
 #include <QHostAddress>
 #include <QNetworkInterface>
+#include <QTimer>
+
+#include <ifaddrs.h>
+
+#include <linux/if_link.h>
 
 #include "main_win.h"
 #include "./ui_main_win.h"
@@ -9,11 +14,17 @@
 MainWin::MainWin(QWidget *parent)
         : QMainWindow(parent),
           ui(new Ui::MainWin) {
+    setWindowIcon(QIcon(":/icons/mainWinIcon.ico"));
     ui->setupUi(this);
 
     connect(ui->actionAbout_developer, SIGNAL(triggered()), this, SLOT(actions()));
     connect(ui->actionAbout_program, SIGNAL(triggered()), this, SLOT(actions()));
     connect(ui->actionExit, SIGNAL(triggered()), this, SLOT(actions()));
+    connect(ui->actionRefresh, SIGNAL(triggered()), this, SLOT(actions()));
+
+    connect(ui->buttonRefresh, SIGNAL(pressed()), this, SLOT(refresh()));
+
+    connect(ui->buttonCheckConnection, SIGNAL(pressed()), this, SLOT(checkConnection()));
 
     const QHostAddress &localhost = QHostAddress(QHostAddress::LocalHost);
     for (const QNetworkInterface &eth : QNetworkInterface::allInterfaces()) {
@@ -54,11 +65,69 @@ void MainWin::actions() {
                                  "May have a lot of bugs and mistakes\n"
                                  "Used technologies:\n"
                                  "C++, Qt, CMake");
-    } else if (action == ui->actionExit) {
+    } else if (action == ui->actionExit)
         QApplication::quit();
-    } else {
+    else if (action == ui->actionRefresh)
+        refresh();
+    else {
         qDebug() << "Invalid action!";
         QApplication::exit(EXIT_FAILURE);
     }
 }
+
+void MainWin::checkConnection() {
+    struct ifaddrs *ifaddr, *ifa;
+    int family, n;
+    qint32 download, upload;
+    QString interface_name;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        qDebug() << "Error getting ifaddrs";
+        return;
+    }
+
+    if (ui->labelIpv6->text().contains('%'))
+        interface_name = ui->labelIpv6->text().right(
+                ui->labelIpv6->text().size() - ui->labelIpv6->text().indexOf('%') - 1);
+    else
+        interface_name = "lo";
+
+    for (ifa = ifaddr, n = 0; ifa != nullptr; ifa = ifa->ifa_next, n++) {
+        if (ifa->ifa_addr == nullptr)
+            continue;
+
+        family = ifa->ifa_addr->sa_family;
+
+        if ((family == AF_PACKET) && (ifa->ifa_data != nullptr) && (ifa->ifa_name == interface_name)) {
+            auto *stats = static_cast<struct rtnl_link_stats *>(ifa->ifa_data);
+            download = stats->rx_bytes;
+            upload = stats->tx_bytes;
+        }
+    }
+
+    freeifaddrs(ifaddr);
+
+    ui->labelDownload->setText("Download Speed: " + QString::number(download) + " B/s");
+    ui->labelUpload->setText("Upload Speed: " + QString::number(upload) + " B/s");
+
+    if (download > 1000) {
+        download = download / 1024;
+        if (download > 1000) {
+            download = download / 1024;
+            ui->labelDownload->setText(ui->labelDownload->text() + " (" + QString::number(download) + " MB/s)");
+        } else
+            ui->labelDownload->setText(ui->labelDownload->text() + " (" + QString::number(download) + " KB/s)");
+    }
+
+    if (upload > 1000) {
+        upload = upload / 1024;
+        if (upload > 1000) {
+            upload = upload / 1024;
+            ui->labelUpload->setText(ui->labelUpload->text() + " (" + QString::number(upload) + " MB/s)");
+        } else
+            ui->labelUpload->setText(ui->labelUpload->text() + " (" + QString::number(upload) + " KB/s)");
+    }
+}
+
+void MainWin::refresh() { QTimer::singleShot(1000, this, SLOT(checkConnection())); }
 

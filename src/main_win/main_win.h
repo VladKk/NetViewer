@@ -19,6 +19,10 @@ private slots:
 
     void actions();
 
+    void refresh();
+
+    void checkConnection();
+
 private:
     Ui::MainWin *ui;
 };

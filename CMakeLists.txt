@@ -15,6 +15,7 @@ set(CMAKE_PREFIX_PATH "/home/vlad/Qt/5.14.2/gcc_64/lib/cmake")
 find_package(Qt5 COMPONENTS Widgets Network REQUIRED)
 
 add_executable(NetViewer
+        res/resources.qrc
         src/main.cpp
         src/main_win/main_win.cpp
         src/main_win/main_win.h
