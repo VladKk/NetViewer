@@ -229,6 +229,7 @@
    </widget>
    <addaction name="menuExtra"/>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
   <action name="actionAbout_program">
    <property name="text">
     <string>About program</string>
